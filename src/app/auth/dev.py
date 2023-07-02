@@ -1,16 +1,20 @@
 __all__ = []
 
-from typing import Optional
-from starlette.responses import RedirectResponse
+from typing import Optional, Annotated
+
+from fastapi import Depends
 
 from src.app.auth import router
-from src.app.auth.jwt import create_access_token, Token
+from src.app.auth.common import redirect_with_token
+from src.app.auth.jwt import create_access_token
+from src.app.users.schemas import CreateUser
 from src.config import settings, Environment
+from src.app.dependencies import Dependencies
+from src.repositories.users import AbstractUserRepository
 
 enabled = (
     bool(settings.DEV_AUTH_EMAIL) and settings.ENVIRONMENT == Environment.DEVELOPMENT
 )
-redirect_uri = settings.AUTH_REDIRECT_URI_PREFIX + "/dev"
 
 if enabled:
     print(
@@ -19,14 +23,31 @@ if enabled:
         "(otherwise, set ENVIRONMENT=production)."
     )
 
-    @router.get("/dev/login")
-    async def login_via_dev(user_id: Optional[str] = None):
-        url = redirect_uri
-        if user_id:
-            url += "?user_id=" + user_id
-        return RedirectResponse(redirect_uri, status_code=302)
+    @router.get("/dev/login", include_in_schema=False)
+    async def dev_login(
+        user_repository: Annotated[
+            AbstractUserRepository, Depends(Dependencies.get_user_repository)
+        ],
+        return_to: str = "/",
+        email: Optional[str] = None,
+    ):
+        email = email or settings.DEV_AUTH_EMAIL
+        await user_repository.upsert_user(
+            CreateUser(email=email, name="Ivan Petrov", status="Student")
+        )
+
+        token = create_access_token(email)
+        return redirect_with_token(return_to, token)
 
     @router.get("/dev/token")
-    async def auth_via_dev(user_id: Optional[str] = None) -> Token:
-        user_id = user_id or settings.DEV_AUTH_EMAIL
-        return create_access_token(user_id)
+    async def get_dev_token(
+        user_repository: Annotated[
+            AbstractUserRepository, Depends(Dependencies.get_user_repository)
+        ],
+        email: Optional[str] = None,
+    ) -> str:
+        email = email or settings.DEV_AUTH_EMAIL
+        await user_repository.upsert_user(
+            CreateUser(email=email, name="Ivan Petrov", status="Student")
+        )
+        return create_access_token(email)

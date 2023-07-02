@@ -1,13 +1,28 @@
 __all__ = []
 
+from typing import Annotated
+
+from fastapi import Depends
+from pydantic import BaseModel, Field
 from starlette.requests import Request
 
 from src.app.auth import router, oauth
-from src.app.auth.jwt import create_access_token, Token
+from src.app.auth.common import redirect_with_token
+from src.app.dependencies import Dependencies
+from src.app.auth.jwt import create_access_token
+from src.app.users.schemas import CreateUser
 from src.config import settings
+from src.repositories.users.abc import AbstractUserRepository
+
+
+class UserInfoFromSSO(BaseModel):
+    email: str
+    name: str | None = Field(alias="commonname")
+    status: str | None = Field(alias="Status")
+
 
 enabled = bool(settings.INNOPOLIS_SSO_CLIENT_ID.get_secret_value())
-redirect_uri = settings.AUTH_REDIRECT_URI_PREFIX + "/innopolis"
+redirect_uri = settings.INNOPOLIS_SSO_REDIRECT_URI
 
 if enabled:
     innopolis_sso = oauth.register(
@@ -19,13 +34,24 @@ if enabled:
         client_kwargs={"scope": "openid"},
     )
 
-    @router.get("/innopolis/login")
-    async def login_via_innopolis(request: Request):
+    @router.get("/innopolis/login", include_in_schema=False)
+    async def innopolis_login(return_to: str, request: Request):
+        request.session["return_to"] = return_to
         return await oauth.innopolis.authorize_redirect(request, redirect_uri)
 
-    @router.get("/innopolis/token")
-    async def auth_via_innopolis(request: Request) -> Token:
+    @router.get("/innopolis/callback", include_in_schema=False)
+    async def innopolis_callback(
+        request: Request,
+        user_repository: Annotated[
+            AbstractUserRepository, Depends(Dependencies.get_user_repository)
+        ],
+    ):
         token = await oauth.innopolis.authorize_access_token(request)
-        user_info = token["userinfo"]
-        email = user_info["email"]
-        return create_access_token(email)
+        user_info_dict: dict = token["userinfo"]
+        user_info = UserInfoFromSSO(**user_info_dict)
+        email = user_info.email
+        await user_repository.upsert_user(CreateUser(**user_info.dict()))
+
+        return_to = request.session.pop("return_to")
+        token = create_access_token(email)
+        return redirect_with_token(return_to, token)
