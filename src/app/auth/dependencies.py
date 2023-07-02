@@ -4,6 +4,7 @@ from fastapi import Depends
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer, APIKeyCookie
 
 from src.app.auth.jwt import verify_token
+from src.config import settings
 from src.exceptions import (
     NoCredentialsException,
     IncorrectCredentialsException,
@@ -18,7 +19,7 @@ bearer_scheme = HTTPBearer(
 cookie_scheme = APIKeyCookie(
     scheme_name="Cookie",
     description="Your JSON Web Token (JWT) stored as 'token' cookie",
-    name="token",  # Cookie name
+    name=settings.AUTH_COOKIE_NAME,  # Cookie name
     auto_error=False,  # We'll handle error manually
 )
 

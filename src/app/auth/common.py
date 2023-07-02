@@ -9,7 +9,7 @@ from src.config import settings
 def redirect_with_token(return_to: str, token: str):
     response = RedirectResponse(return_to, status_code=302)
     response.set_cookie(
-        key="token",
+        key=settings.AUTH_COOKIE_NAME,
         value=token,
         httponly=True,
         secure=True,
@@ -23,7 +23,7 @@ def redirect_with_token(return_to: str, token: str):
 async def innopolis_logout(return_to: str):
     response = RedirectResponse(return_to, status_code=302)
     response.delete_cookie(
-        key="token",
+        key=settings.AUTH_COOKIE_NAME,
         httponly=True,
         secure=True,
         domain=settings.AUTH_COOKIE_DOMAIN,

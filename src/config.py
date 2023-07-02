@@ -28,6 +28,7 @@ class Settings(BaseSettings):
     DB_URL: SecretStr
 
     # Authentication
+    AUTH_COOKIE_NAME: str = "token"
     AUTH_COOKIE_DOMAIN: str = (
         "innohassle.ru" if ENVIRONMENT == Environment.PRODUCTION else "localhost"
     )

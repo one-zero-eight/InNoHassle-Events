@@ -1,0 +1,3 @@
+# Ignore sensitive files
+innopolis_user_data.json
+predefined_groups.json

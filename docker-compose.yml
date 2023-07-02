@@ -1,0 +1,31 @@
+version: "3"
+
+services:
+  api:
+    depends_on:
+      db:
+        condition: service_healthy
+    build:
+      dockerfile: ./deploy/Dockerfile
+      context: .
+    ports:
+      - "8000:8000"
+    volumes:
+      - "./innopolis_user_data.json:/code/innopolis_user_data.json"
+      - "./predefined_groups.json:/code/predefined_groups.json"
+    env_file: .env.local
+
+  db:
+    image: "postgres:15.3"
+    restart: always
+    volumes:
+      - "postgres:/var/lib/postgresql/data"
+    env_file: .env.local
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+    postgres:
