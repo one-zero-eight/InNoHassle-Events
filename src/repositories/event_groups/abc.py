@@ -28,13 +28,13 @@ class AbstractEventGroupRepository(metaclass=ABCMeta):
 
     @abstractmethod
     async def create_group_if_not_exists(
-            self, group: "CreateEventGroup"
+        self, group: "CreateEventGroup"
     ) -> "ViewEventGroup":
         ...
 
     @abstractmethod
     async def batch_create_group_if_not_exists(
-            self, groups: list["CreateEventGroup"]
+        self, groups: list["CreateEventGroup"]
     ) -> list["ViewEventGroup"]:
         ...
 
@@ -44,6 +44,6 @@ class AbstractEventGroupRepository(metaclass=ABCMeta):
 
     @abstractmethod
     async def set_hidden(
-            self, user_id: USER_ID, is_favorite: bool, group_id: int, hide: bool = True
+        self, user_id: USER_ID, is_favorite: bool, group_id: int, hide: bool = True
     ) -> "ViewUser":
         ...

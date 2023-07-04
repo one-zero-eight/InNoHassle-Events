@@ -12,12 +12,7 @@ class User:
     groups = Column("groups", String)
 
 
-group = Table(
-    "group",
-    metadata,
-    Column("name", String),
-    Column("type", String)
-)
+group = Table("group", metadata, Column("name", String), Column("type", String))
 
 user = Table(
     "user",
