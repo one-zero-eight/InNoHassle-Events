@@ -17,6 +17,7 @@ class Settings(BaseSettings):
     APP_TITLE = "InNoHassle Events API"
     APP_DESCRIPTION = "API of Events project in InNoHassle Ecosystem."
     APP_VERSION = "0.1.0"
+    APP_ROOT_PATH: str = ""
 
     ENVIRONMENT: Environment = Environment.DEVELOPMENT
 

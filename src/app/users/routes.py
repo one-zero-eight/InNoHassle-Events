@@ -1,21 +1,22 @@
-from typing import Iterable
-
 from fastapi import APIRouter
-from pydantic import BaseModel
 
 from src.app.dependencies import (
     EVENT_GROUP_REPOSITORY_DEPENDENCY,
     USER_REPOSITORY_DEPENDENCY,
-    CURRENT_USER_EMAIL_DEPENDENCY,
+    CURRENT_USER_ID_DEPENDENCY,
 )
-from src.app.schemas import ViewUser, UserXGroupView
-from src.exceptions import UserNotFoundException
+from src.app.schemas import ViewUser
+from src.exceptions import (
+    UserNotFoundException,
+    DBEventGroupDoesNotExistInDb,
+    EventGroupNotFoundException,
+)
 
 router = APIRouter(prefix="/users", tags=["Users"])
 
 auth_responses_schema = {
-    401: {"description": "User is not authenticated"},
-    404: {"description": "User not found"},
+    401: {"description": "No credentials provided"},
+    403: {"description": "Could not validate credentials"},
 }
 
 
@@ -27,56 +28,37 @@ auth_responses_schema = {
     },
 )
 async def get_me(
-    email: CURRENT_USER_EMAIL_DEPENDENCY,
+    user_id: CURRENT_USER_ID_DEPENDENCY,
     user_repository: USER_REPOSITORY_DEPENDENCY,
 ) -> ViewUser:
     """
     Get current user info if authenticated
     """
-    user_id = await user_repository.get_user_id_by_email(email)
-
-    if user_id is None:
-        raise UserNotFoundException()
-
     return await user_repository.get_user(user_id)
-
-
-class ListOfFavorites(BaseModel):
-    favorites: list[UserXGroupView]
-
-    @classmethod
-    def from_iterable(cls, favorites: Iterable[UserXGroupView]) -> "ListOfFavorites":
-        return cls(favorites=list(favorites))
 
 
 @router.post(
     "/me/favorites",
     responses={
         200: {"description": "Favorite added successfully"},
+        404: {"description": "Event group not found"},
         **auth_responses_schema,
     },
 )
 async def add_favorite(
-    email: CURRENT_USER_EMAIL_DEPENDENCY,
+    user_id: CURRENT_USER_ID_DEPENDENCY,
     user_repository: USER_REPOSITORY_DEPENDENCY,
-    event_group_repository: EVENT_GROUP_REPOSITORY_DEPENDENCY,
     group_id: int,
-) -> ListOfFavorites:
+) -> ViewUser:
     """
     Add favorite to current user
     """
-    user_id = await user_repository.get_user_id_by_email(email)
-
-    if user_id is None:
-        raise UserNotFoundException()
-
-    group = await event_group_repository.get_group(group_id)
-
-    if group is None:
-        raise UserNotFoundException()
-
-    updated_favorites = await user_repository.add_favorite(user_id, group.id)
-    return ListOfFavorites.from_iterable(updated_favorites)
+    try:
+        updated_user = await user_repository.add_favorite(user_id, group_id)
+        updated_user: ViewUser
+        return updated_user
+    except DBEventGroupDoesNotExistInDb as e:
+        raise EventGroupNotFoundException() from e
 
 
 @router.delete(
@@ -87,25 +69,16 @@ async def add_favorite(
     },
 )
 async def delete_favorite(
-    email: CURRENT_USER_EMAIL_DEPENDENCY,
+    user_id: CURRENT_USER_ID_DEPENDENCY,
     user_repository: USER_REPOSITORY_DEPENDENCY,
-    event_group_repository: EVENT_GROUP_REPOSITORY_DEPENDENCY,
     group_id: int,
-) -> ListOfFavorites:
+) -> ViewUser:
     """
     Delete favorite from current user
     """
-    user_id = await user_repository.get_user_id_by_email(email)
-
-    if user_id is None:
-        raise UserNotFoundException()
-
-    # check if group exists
-    if await event_group_repository.get_group(group_id) is None:
-        raise UserNotFoundException()
-
-    updated_favorites = await user_repository.remove_favorite(user_id, group_id)
-    return ListOfFavorites.from_iterable(updated_favorites)
+    updated_user = await user_repository.remove_favorite(user_id, group_id)
+    updated_user: ViewUser
+    return updated_user
 
 
 @router.post(
@@ -116,29 +89,24 @@ async def delete_favorite(
     },
 )
 async def hide_favorite(
-    email: CURRENT_USER_EMAIL_DEPENDENCY,
-    user_repository: USER_REPOSITORY_DEPENDENCY,
+    user_id: CURRENT_USER_ID_DEPENDENCY,
     event_group_repository: EVENT_GROUP_REPOSITORY_DEPENDENCY,
     group_id: int,
     hide: bool = True,
-) -> ListOfFavorites:
+) -> ViewUser:
     """
     Hide favorite from current user
     """
-    user_id = await user_repository.get_user_id_by_email(email)
-
-    if user_id is None:
-        raise UserNotFoundException()
-
-    # check if group exists
+    # check if a group exists
     if await event_group_repository.get_group(group_id) is None:
         raise UserNotFoundException()
 
-    updated_favorites = await event_group_repository.set_hidden(
+    updated_user = await event_group_repository.set_hidden(
         user_id=user_id, group_id=group_id, hide=hide, is_favorite=True
     )
+    updated_user: ViewUser
 
-    return ListOfFavorites.from_iterable(updated_favorites)
+    return updated_user
 
 
 @router.post(
@@ -149,26 +117,22 @@ async def hide_favorite(
     },
 )
 async def hide_group(
-    email: CURRENT_USER_EMAIL_DEPENDENCY,
-    user_repository: USER_REPOSITORY_DEPENDENCY,
+    user_id: CURRENT_USER_ID_DEPENDENCY,
     event_group_repository: EVENT_GROUP_REPOSITORY_DEPENDENCY,
     group_id: int,
     hide: bool = True,
-) -> ListOfFavorites:
+) -> ViewUser:
     """
     Hide group from current user
     """
-    user_id = await user_repository.get_user_id_by_email(email)
 
-    if user_id is None:
-        raise UserNotFoundException()
-
-    # check if group exists
+    # check if a group exists
     if await event_group_repository.get_group(group_id) is None:
-        raise UserNotFoundException()
+        raise EventGroupNotFoundException()
 
-    updated_favorites = await event_group_repository.set_hidden(
+    updated_user = await event_group_repository.set_hidden(
         user_id=user_id, group_id=group_id, hide=hide, is_favorite=False
     )
+    updated_user: ViewUser
 
-    return ListOfFavorites.from_iterable(updated_favorites)
+    return updated_user

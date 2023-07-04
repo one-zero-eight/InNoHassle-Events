@@ -1,4 +1,4 @@
-__all__ = ["get_current_user_email"]
+__all__ = ["get_current_user_id"]
 
 from fastapi import Depends
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer, APIKeyCookie
@@ -24,14 +24,14 @@ cookie_scheme = APIKeyCookie(
 )
 
 
-def get_current_user_email(
+def get_current_user_id(
     bearer: HTTPAuthorizationCredentials = Depends(bearer_scheme),
     cookie: str = Depends(cookie_scheme),
-) -> str:
+) -> int:
     # Prefer header to cookie
     token = (bearer and bearer.credentials) or cookie
     if not token:
         raise NoCredentialsException()
 
     token_data = verify_token(token, IncorrectCredentialsException())
-    return token_data.email
+    return token_data.user_id

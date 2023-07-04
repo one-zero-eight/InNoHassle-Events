@@ -2,7 +2,7 @@ __all__ = [
     "STORAGE_DEPENDENCY",
     "USER_REPOSITORY_DEPENDENCY",
     "EVENT_GROUP_REPOSITORY_DEPENDENCY",
-    "CURRENT_USER_EMAIL_DEPENDENCY",
+    "CURRENT_USER_ID_DEPENDENCY",
     "Dependencies",
 ]
 
@@ -47,7 +47,7 @@ class Dependencies:
     ):
         cls._event_group_repository = event_group_repository
 
-    get_current_user_email: Callable[..., str]
+    get_current_user_id: Callable[..., str]
 
 
 STORAGE_DEPENDENCY = Annotated[
@@ -60,10 +60,8 @@ EVENT_GROUP_REPOSITORY_DEPENDENCY = Annotated[
     "AbstractEventGroupRepository", Depends(Dependencies.get_event_group_repository)
 ]
 
-from src.app.auth.dependencies import get_current_user_email
+from src.app.auth.dependencies import get_current_user_id
 
-Dependencies.get_current_user_email = get_current_user_email
+Dependencies.get_current_user_id = get_current_user_id
 
-CURRENT_USER_EMAIL_DEPENDENCY = Annotated[
-    str, Depends(Dependencies.get_current_user_email)
-]
+CURRENT_USER_ID_DEPENDENCY = Annotated[str, Depends(Dependencies.get_current_user_id)]

@@ -977,20 +977,6 @@ pymysql = ["pymysql"]
 sqlcipher = ["sqlcipher3-binary"]
 
 [[package]]
-name = "sqlalchemy2-stubs"
-version = "0.0.2a34"
-description = "Typing Stubs for SQLAlchemy 1.4"
-optional = false
-python-versions = ">=3.6"
-files = [
-    {file = "sqlalchemy2-stubs-0.0.2a34.tar.gz", hash = "sha256:2432137ab2fde1a608df4544f6712427b0b7ff25990cfbbc5a9d1db6c8c6f489"},
-    {file = "sqlalchemy2_stubs-0.0.2a34-py3-none-any.whl", hash = "sha256:a313220ac793404349899faf1272e821a62dbe1d3a029bd444faa8d3e966cd07"},
-]
-
-[package.dependencies]
-typing-extensions = ">=3.7.4"
-
-[[package]]
 name = "starlette"
 version = "0.27.0"
 description = "The little ASGI library that shines."
@@ -1273,4 +1259,4 @@ files = [
 [metadata]
 lock-version = "2.0"
 python-versions = "~3.11"
-content-hash = "7233de41530b1cf94804400719ed9c43989646cde8d27088b6e1096bad494ca7"
+content-hash = "c30d117c6cfba90fc85035c73c2402794c9c31f5ec3d136f12acc3508fbbdf94"

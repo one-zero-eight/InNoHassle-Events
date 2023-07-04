@@ -29,9 +29,13 @@ app = FastAPI(
     description=settings.APP_DESCRIPTION,
     version=settings.APP_VERSION,
     servers=[
-        {"url": "", "description": "Current"},
-        {"url": "https://api.innohassle.ru", "description": "Production environment"},
+        {"url": settings.APP_ROOT_PATH, "description": "Current"},
+        {
+            "url": "https://api.innohassle.ru/events/v0",
+            "description": "Production environment",
+        },
     ],
+    root_path=settings.APP_ROOT_PATH,
     root_path_in_servers=False,
     generate_unique_id_function=generate_unique_operation_id,
 )

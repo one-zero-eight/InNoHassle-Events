@@ -7,7 +7,6 @@ from src.storages.sql.models.base import Base
 
 if TYPE_CHECKING:
     from src.storages.sql.models.event_groups import EventGroup
-    from src.storages.sql.models import UserXFavorite, UserXGroup
 
 
 class User(Base):
@@ -40,3 +39,6 @@ class User(Base):
     groups: Mapped[list["EventGroup"]] = association_proxy(
         "groups_association", "group", creator=lambda group: UserXGroup(group=group)
     )
+
+
+from src.storages.sql.models.event_groups import UserXFavorite, UserXGroup

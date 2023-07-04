@@ -33,3 +33,12 @@ class EventGroupNotFoundException(HTTPException):
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Event group not found",
         )
+
+
+class DBException(Exception):
+    ...
+
+
+class DBEventGroupDoesNotExistInDb(DBException):
+    def __init__(self, id: int):
+        super().__init__(f"Event group with id {id} does not exist in db")

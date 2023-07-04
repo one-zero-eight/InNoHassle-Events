@@ -1,11 +1,10 @@
-__all__ = ["AbstractUserRepository"]
+__all__ = ["AbstractUserRepository", "USER_ID"]
 
 from abc import ABCMeta, abstractmethod
 from typing import Annotated, TYPE_CHECKING
 
 if TYPE_CHECKING:
     from src.app.schemas import CreateUser, ViewUser
-    from src.storages.sql.models import UserXGroup
 
 USER_ID = Annotated[int, "User ID"]
 
@@ -38,13 +37,9 @@ class AbstractUserRepository(metaclass=ABCMeta):
         ...
 
     @abstractmethod
-    async def add_favorite(
-        self, user_id: USER_ID, favorite_id: int
-    ) -> list["UserXGroup"]:
+    async def add_favorite(self, user_id: USER_ID, favorite_id: int) -> "ViewUser":
         ...
 
     @abstractmethod
-    async def remove_favorite(
-        self, user_id: USER_ID, favorite_id: int
-    ) -> list["UserXGroup"]:
+    async def remove_favorite(self, user_id: USER_ID, favorite_id: int) -> "ViewUser":
         ...

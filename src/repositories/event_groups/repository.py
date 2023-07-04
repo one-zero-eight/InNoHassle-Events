@@ -1,16 +1,17 @@
 __all__ = ["SqlEventGroupRepository"]
 
-from typing import Annotated
+from typing import Annotated, Type
 
 from sqlalchemy import select, update
 from sqlalchemy.dialects.postgresql import insert
-from sqlalchemy.orm import selectinload
+from sqlalchemy.orm import joinedload
 
 from src.app.event_groups.schemas import (
     UserXGroupView,
     ViewEventGroup,
     CreateEventGroup,
 )
+from src.app.users.schemas import ViewUser
 from src.repositories.event_groups.abc import AbstractEventGroupRepository
 from src.storages.sql import AbstractSQLAlchemyStorage
 from src.storages.sql.models import UserXFavorite, UserXGroup, EventGroup, User
@@ -27,23 +28,15 @@ class SqlEventGroupRepository(AbstractEventGroupRepository):
     async def setup_groups(self, user_id: USER_ID, groups: list[int]):
         async with self.storage.create_session() as session:
             q = (
-                select(User)
-                .where(User.id == user_id)
-                .options(
-                    selectinload(User.favorites_association),
-                    selectinload(User.groups_association),
+                insert(UserXGroup)
+                .values(
+                    [{"user_id": user_id, "group_id": group_id} for group_id in groups]
+                )
+                .on_conflict_do_nothing(
+                    index_elements=[UserXGroup.user_id, UserXGroup.group_id]
                 )
             )
-
-            user = await session.scalar(q)
-            user: User
-
-            group_objs = await session.execute(
-                select(EventGroup).where(EventGroup.id.in_(groups))
-            )
-
-            group_scalars = group_objs.scalars().all()
-            user.groups = group_scalars
+            await session.execute(q)
             await session.commit()
 
     async def batch_setup_groups(self, groups_mapping: dict[USER_ID, list[int]]):
@@ -64,10 +57,9 @@ class SqlEventGroupRepository(AbstractEventGroupRepository):
 
     async def set_hidden(
         self, user_id: USER_ID, is_favorite: bool, group_id: int, hide: bool = True
-    ) -> list[UserXGroupView]:
+    ) -> "ViewUser":
         async with self.storage.create_session() as session:
             table = UserXFavorite if is_favorite else UserXGroup
-            table: UserXFavorite | UserXGroup
 
             query = (
                 update(table)
@@ -76,13 +68,19 @@ class SqlEventGroupRepository(AbstractEventGroupRepository):
                 .values(hidden=hide)
             )
             await session.execute(query)
-            await session.commit()
 
             # from table
-            q = select(table).where(table.user_id == user_id)
-
-            groups = await session.execute(q)
-            return [UserXGroupView.from_orm(group) for group in groups.scalars().all()]
+            q = (
+                select(User)
+                .where(User.id == user_id)
+                .options(
+                    joinedload(User.favorites_association),
+                    joinedload(User.groups_association),
+                )
+            )
+            user = await session.scalar(q)
+            await session.commit()
+            return ViewUser.from_orm(user)
 
     async def get_group(self, group_id: int) -> ViewEventGroup:
         async with self.storage.create_session() as session:

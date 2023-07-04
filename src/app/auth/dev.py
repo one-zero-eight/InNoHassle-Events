@@ -32,11 +32,10 @@ if enabled:
         email: Optional[str] = None,
     ):
         email = email or settings.DEV_AUTH_EMAIL
-        await user_repository.upsert_user(
+        user = await user_repository.upsert_user(
             CreateUser(email=email, name="Ivan Petrov", status="Student")
         )
-
-        token = create_access_token(email)
+        token = create_access_token(user.id)
         return redirect_with_token(return_to, token)
 
     @router.get("/dev/token")
@@ -47,7 +46,7 @@ if enabled:
         email: Optional[str] = None,
     ) -> str:
         email = email or settings.DEV_AUTH_EMAIL
-        await user_repository.upsert_user(
+        user = await user_repository.upsert_user(
             CreateUser(email=email, name="Ivan Petrov", status="Student")
         )
-        return create_access_token(email)
+        return create_access_token(user.id)

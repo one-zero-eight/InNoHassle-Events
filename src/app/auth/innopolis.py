@@ -36,6 +36,7 @@ if enabled:
 
     @router.get("/innopolis/login", include_in_schema=False)
     async def innopolis_login(return_to: str, request: Request):
+        request.session.clear()  # Clear session cookie as it is used only during authentication
         request.session["return_to"] = return_to
         return await oauth.innopolis.authorize_redirect(request, redirect_uri)
 
@@ -49,9 +50,9 @@ if enabled:
         token = await oauth.innopolis.authorize_access_token(request)
         user_info_dict: dict = token["userinfo"]
         user_info = UserInfoFromSSO(**user_info_dict)
-        email = user_info.email
-        await user_repository.upsert_user(CreateUser(**user_info.dict()))
+        user = await user_repository.upsert_user(CreateUser(**user_info.dict()))
 
         return_to = request.session.pop("return_to")
-        token = create_access_token(email)
+        request.session.clear()  # Clear session cookie as it is used only during authentication
+        token = create_access_token(user.id)
         return redirect_with_token(return_to, token)

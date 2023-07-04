@@ -1,16 +1,17 @@
 __all__ = ["SqlUserRepository"]
 
-from sqlalchemy import select
+from sqlalchemy import select, delete
 from sqlalchemy.dialects.postgresql import insert
-from sqlalchemy.orm import selectinload
+from sqlalchemy.orm import selectinload, joinedload
+from sqlalchemy.sql.expression import exists
 
 from src.app.event_groups.schemas import (
-    ViewEventGroup,
     UserXGroupView,
 )
 from src.app.users.schemas import CreateUser, ViewUser
+from src.exceptions import DBEventGroupDoesNotExistInDb
 from src.repositories.users.abc import AbstractUserRepository, USER_ID
-from src.storages.sql.models import User, EventGroup
+from src.storages.sql.models import User, EventGroup, UserXFavorite
 from src.storages.sql.storage import AbstractSQLAlchemyStorage
 
 
@@ -19,8 +20,8 @@ def SELECT_USER_BY_ID(id_: USER_ID):
         select(User)
         .where(User.id == id_)
         .options(
-            selectinload(User.favorites_association),
-            selectinload(User.groups_association),
+            joinedload(User.favorites_association),
+            joinedload(User.groups_association),
         )
     )
 
@@ -108,42 +109,43 @@ class SqlUserRepository(AbstractUserRepository):
             user_id = await session.scalar(select(User.id).where(User.email == email))
             return user_id
 
-    async def add_favorite(
-        self, user_id: USER_ID, favorite_id: int
-    ) -> list[ViewEventGroup]:
+    async def add_favorite(self, user_id: USER_ID, favorite_id: int) -> ViewUser:
         async with self.storage.create_session() as session:
-            # select user
-            user = await session.scalar(SELECT_USER_BY_ID(user_id))
-            user: User
-            # select favorite by id
-            favorite_group = await session.scalar(
-                select(EventGroup).where(EventGroup.id == favorite_id)
+            # check if favorite exists
+            favorite_exists = await session.scalar(
+                exists(EventGroup.id).where(EventGroup.id == favorite_id).select()
             )
-            # add favorite
-            if favorite_group not in user.favorites:
-                user.favorites.append(favorite_group)
+
+            if not favorite_exists:
+                raise DBEventGroupDoesNotExistInDb(id=favorite_id)
+
+            q = (
+                insert(UserXFavorite)
+                .values(
+                    user_id=user_id,
+                    group_id=favorite_id,
+                )
+                .on_conflict_do_nothing(
+                    index_elements=[UserXFavorite.user_id, UserXFavorite.group_id]
+                )
+            )
+            await session.execute(q)
+            user = await session.scalar(SELECT_USER_BY_ID(user_id))
             await session.commit()
+            return ViewUser.from_orm(user)
 
-            return [
-                UserXGroupView.from_orm(group) for group in user.favorites_association
-            ]
-
-    async def remove_favorite(
-        self, user_id: USER_ID, favorite_id: int
-    ) -> list[UserXGroupView]:
+    async def remove_favorite(self, user_id: USER_ID, favorite_id: int) -> ViewUser:
         async with self.storage.create_session() as session:
-            # select user
-            user = await session.scalar(SELECT_USER_BY_ID(user_id))
-            user: User
-            # select favorite
-            favorite_group = await session.scalar(
-                select(EventGroup).where(EventGroup.id == favorite_id)
+            q = (
+                delete(UserXFavorite)
+                .where(
+                    UserXFavorite.user_id == user_id,
+                )
+                .where(
+                    UserXFavorite.group_id == favorite_id,
+                )
             )
-            # remove favorite
-            if favorite_group and favorite_group in user.favorites:
-                user.favorites.remove(favorite_group)
+            await session.execute(q)
+            user = await session.scalar(SELECT_USER_BY_ID(user_id))
             await session.commit()
-            # from association
-            return [
-                UserXGroupView.from_orm(group) for group in user.favorites_association
-            ]
+            return ViewUser.from_orm(user)

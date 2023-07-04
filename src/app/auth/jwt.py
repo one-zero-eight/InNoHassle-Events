@@ -4,7 +4,7 @@ from datetime import timedelta, datetime
 from typing import Optional
 
 from jose import JWTError, jwt
-from pydantic import BaseModel
+from pydantic import BaseModel, validator
 
 from src.config import settings
 
@@ -12,12 +12,18 @@ ALGORITHM = "HS256"
 
 
 class TokenData(BaseModel):
-    email: Optional[str] = None
+    user_id: Optional[int] = None
+
+    @validator("user_id", pre=True, always=True)
+    def cast_to_int(cls, v):
+        if isinstance(v, str):
+            return int(v)
+        return v
 
 
-def create_access_token(email: str) -> str:
+def create_access_token(user_id: int) -> str:
     access_token = _create_access_token(
-        data={"sub": email},
+        data={"sub": str(user_id)},
         expires_delta=timedelta(days=90),
     )
     return access_token
@@ -38,10 +44,10 @@ def verify_token(token: str, credentials_exception) -> TokenData:
         payload = jwt.decode(
             token, settings.JWT_SECRET_KEY.get_secret_value(), algorithms=[ALGORITHM]
         )
-        email: str = payload.get("sub")
-        if email is None:
+        user_id: str = payload.get("sub")
+        if user_id is None or not user_id.isdigit():
             raise credentials_exception
-        token_data = TokenData(email=email)
+        token_data = TokenData(user_id=int(user_id))
         return token_data
     except JWTError:
         raise credentials_exception

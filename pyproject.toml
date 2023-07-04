@@ -14,9 +14,6 @@ fastapi = {extras = ["all"], version = "^0.98.0"}
 authlib = "^1.2.1"
 python-jose = {extras = ["cryptography"], version = "^3.3.0"}
 
-[tool.poetry.group.dev.dependencies]
-sqlalchemy2-stubs = "^0.0.2a34"
-
 [tool.poetry.group.prod.dependencies]
 gunicorn = "20.1.0"
 
