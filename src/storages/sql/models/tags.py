@@ -28,7 +28,7 @@ class Tag(Base):
 
 class TagXEventGroup(Base):
     __tablename__ = "tags_x_event_groups"
-    tag_id: Mapped[int] = mapped_column(ForeignKey("tags.id"), primary_key=True)
+    tag_id: Mapped[int] = mapped_column(ForeignKey("tags.id"))
     event_group_id: Mapped[int] = mapped_column(
         ForeignKey("groups.id"), primary_key=True
     )

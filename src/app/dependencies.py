@@ -2,6 +2,7 @@ __all__ = [
     "STORAGE_DEPENDENCY",
     "USER_REPOSITORY_DEPENDENCY",
     "EVENT_GROUP_REPOSITORY_DEPENDENCY",
+    "TAG_REPOSITORY_DEPENDENCY",
     "CURRENT_USER_ID_DEPENDENCY",
     "Dependencies",
 ]
@@ -13,13 +14,16 @@ from fastapi import Depends
 if TYPE_CHECKING:
     from src.repositories.users import AbstractUserRepository
     from src.repositories.event_groups import AbstractEventGroupRepository
+    from src.repositories.tags import AbstractTagRepository
     from src.storages.sql.storage import AbstractSQLAlchemyStorage
+    from src.repositories.tags import Abstract # noqa
 
 
 class Dependencies:
     _storage: "AbstractSQLAlchemyStorage"
     _user_repository: "AbstractUserRepository"
     _event_group_repository: "AbstractEventGroupRepository"
+    _tag_repository: "AbstractTagRepository"
 
     @classmethod
     def get_storage(cls) -> "AbstractSQLAlchemyStorage":
@@ -49,6 +53,14 @@ class Dependencies:
 
     get_current_user_id: Callable[..., str]
 
+    @classmethod
+    def get_tag_repository(cls) -> "AbstractTagRepository":
+        return cls._tag_repository
+
+    @classmethod
+    def set_tag_repository(cls, tag_repository: "AbstractTagRepository"):
+        cls._tag_repository = tag_repository
+
 
 STORAGE_DEPENDENCY = Annotated[
     "AbstractSQLAlchemyStorage", Depends(Dependencies.get_storage)
@@ -58,6 +70,10 @@ USER_REPOSITORY_DEPENDENCY = Annotated[
 ]
 EVENT_GROUP_REPOSITORY_DEPENDENCY = Annotated[
     "AbstractEventGroupRepository", Depends(Dependencies.get_event_group_repository)
+]
+
+TAG_REPOSITORY_DEPENDENCY = Annotated[
+    "AbstractTagRepository", Depends(Dependencies.get_tag_repository)
 ]
 
 from src.app.auth.dependencies import get_current_user_id
