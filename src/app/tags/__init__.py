@@ -1,3 +1,3 @@
 __all__ = ["router"]
 
-from src.app.event_groups.routes import router
+from src.app.tags.routes import router

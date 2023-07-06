@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, Iterable
 
 from pydantic import BaseModel
 
@@ -26,3 +26,15 @@ class ViewTag(BaseModel):
 
     class Config:
         orm_mode = True
+
+
+class ListOfTagsResponse(BaseModel):
+    """
+    Represents a list of tags.
+    """
+
+    tags: list[ViewTag]
+
+    @classmethod
+    def from_iterable(cls, tags: Iterable[ViewTag]) -> "ListOfTagsResponse":
+        return cls(tags=tags)

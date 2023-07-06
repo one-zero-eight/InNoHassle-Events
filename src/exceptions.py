@@ -35,6 +35,14 @@ class EventGroupNotFoundException(HTTPException):
         )
 
 
+class TagNotFoundException(HTTPException):
+    def __init__(self):
+        super().__init__(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Tag not found",
+        )
+
+
 class DBException(Exception):
     ...
 

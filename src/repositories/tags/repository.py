@@ -20,16 +20,16 @@ class SqlTagRepository(AbstractTagRepository):
     async def get_tag(self, tag_id: int) -> ViewTag:
         async with self.storage.create_session() as session:
             q = select(Tag).where(Tag.id == tag_id)
-            group = await session.scalar(q)
+            tag = await session.scalar(q)
 
-            if group:
-                return ViewTag.from_orm(group)
+            if tag:
+                return ViewTag.from_orm(tag)
 
     async def get_all_tags(self) -> list["ViewTag"]:
         async with self.storage.create_session() as session:
             q = select(Tag)
             r = await session.execute(q)
-            return [ViewTag.from_orm(group) for group in r.scalars().all()]
+            return [ViewTag.from_orm(tag) for tag in r.scalars().all()]
 
     async def create_tag_if_not_exists(self, tag: CreateTag) -> ViewTag:
         async with self.storage.create_session() as session:
