@@ -1,19 +1,14 @@
 __all__ = ["SqlTagRepository"]
 
-from typing import Annotated, Type
 
-from sqlalchemy import select, update
+from sqlalchemy import select
 from sqlalchemy.dialects.postgresql import insert
-from sqlalchemy.orm import joinedload
 
-from src.app.tags.schemas import (
-    ViewTag,
-    CreateTag
-)
-from src.app.users.schemas import ViewUser
+
+from src.app.tags.schemas import ViewTag, CreateTag
 from src.repositories.tags.abc import AbstractTagRepository
 from src.storages.sql import AbstractSQLAlchemyStorage
-from src.storages.sql.models import UserXFavorite, UserXGroup, EventGroup, User, Tag
+from src.storages.sql.models import Tag
 
 
 class SqlTagRepository(AbstractTagRepository):
@@ -46,13 +41,11 @@ class SqlTagRepository(AbstractTagRepository):
             await session.commit()
             return ViewTag.from_orm(tag)
 
-    async def batch_create_tag_if_not_exists(self, tags: list[CreateTag]) -> list[ViewTag]:
+    async def batch_create_tag_if_not_exists(
+        self, tags: list[CreateTag]
+    ) -> list[ViewTag]:
         async with self.storage.create_session() as session:
-            q = (
-                insert(Tag)
-                .values([tag.dict() for tag in tags])
-                .returning(Tag)
-            )
+            q = insert(Tag).values([tag.dict() for tag in tags]).returning(Tag)
             q = q.on_conflict_do_update(
                 set_={"id": Tag.id},
             )

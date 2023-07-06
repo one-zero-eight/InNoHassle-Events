@@ -16,7 +16,7 @@ if TYPE_CHECKING:
     from src.repositories.event_groups import AbstractEventGroupRepository
     from src.repositories.tags import AbstractTagRepository
     from src.storages.sql.storage import AbstractSQLAlchemyStorage
-    from src.repositories.tags import Abstract # noqa
+    from src.repositories.tags import Abstract  # noqa
 
 
 class Dependencies:

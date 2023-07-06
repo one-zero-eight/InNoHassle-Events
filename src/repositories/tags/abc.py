@@ -4,7 +4,6 @@ from src.app.tags.schemas import ViewTag, CreateTag
 
 
 class AbstractTagRepository(metaclass=ABCMeta):
-
     @abstractmethod
     async def get_tag(self, tag_id: int) -> ViewTag:
         ...
@@ -18,5 +17,7 @@ class AbstractTagRepository(metaclass=ABCMeta):
         ...
 
     @abstractmethod
-    async def batch_create_tag_if_not_exists(self, tags: list[CreateTag]) -> list[ViewTag]:
+    async def batch_create_tag_if_not_exists(
+        self, tags: list[CreateTag]
+    ) -> list[ViewTag]:
         ...
