@@ -86,7 +86,7 @@ class SqlUserRepository(AbstractUserRepository):
             return ViewUser.from_orm(user)
 
     async def batch_create_user_if_not_exists(
-        self, users: list[CreateUser]
+            self, users: list[CreateUser]
     ) -> list[ViewUser]:
         async with self.storage.create_session() as session:
             q = insert(User).values([user.dict() for user in users])
@@ -149,3 +149,9 @@ class SqlUserRepository(AbstractUserRepository):
             user = await session.scalar(SELECT_USER_BY_ID(user_id))
             await session.commit()
             return ViewUser.from_orm(user)
+
+    async def delete_all(self):
+        async with self.storage.create_session() as session:
+            q = delete(User).all()
+            await session.execute(q)
+            await session.commit()

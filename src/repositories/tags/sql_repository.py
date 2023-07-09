@@ -1,9 +1,7 @@
 __all__ = ["SqlTagRepository"]
 
-
-from sqlalchemy import select
+from sqlalchemy import select, delete
 from sqlalchemy.dialects.postgresql import insert
-
 
 from src.app.tags.schemas import ViewTag, CreateTag
 from src.repositories.tags.abc import AbstractTagRepository
@@ -42,7 +40,7 @@ class SqlTagRepository(AbstractTagRepository):
             return ViewTag.from_orm(tag)
 
     async def batch_create_tag_if_not_exists(
-        self, tags: list[CreateTag]
+            self, tags: list[CreateTag]
     ) -> list[ViewTag]:
         async with self.storage.create_session() as session:
             q = insert(Tag).values([tag.dict() for tag in tags]).returning(Tag)
@@ -52,3 +50,11 @@ class SqlTagRepository(AbstractTagRepository):
             db_tags = await session.scalars(q)
             await session.commit()
             return [ViewTag.from_orm(tag) for tag in db_tags]
+
+    """Needed only for tests."""
+
+    async def delete_all(self):
+        async with self.storage.create_session() as session:
+            q = delete(Tag).all()
+            await session.execute(q)
+            await session.commit()

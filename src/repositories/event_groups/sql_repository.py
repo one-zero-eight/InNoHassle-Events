@@ -2,7 +2,7 @@ __all__ = ["SqlEventGroupRepository"]
 
 from typing import Annotated, Type
 
-from sqlalchemy import select, update
+from sqlalchemy import select, update, delete
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import joinedload
 
@@ -56,7 +56,7 @@ class SqlEventGroupRepository(AbstractEventGroupRepository):
             await session.commit()
 
     async def set_hidden(
-        self, user_id: USER_ID, is_favorite: bool, group_id: int, hide: bool = True
+            self, user_id: USER_ID, is_favorite: bool, group_id: int, hide: bool = True
     ) -> "ViewUser":
         async with self.storage.create_session() as session:
             table = UserXFavorite if is_favorite else UserXGroup
@@ -105,7 +105,7 @@ class SqlEventGroupRepository(AbstractEventGroupRepository):
                 return ViewEventGroup.from_orm(group)
 
     async def create_group_if_not_exists(
-        self, group: CreateEventGroup
+            self, group: CreateEventGroup
     ) -> ViewEventGroup:
         async with self.storage.create_session() as session:
             q = insert(EventGroup).values(**group.dict()).returning(EventGroup)
@@ -118,7 +118,7 @@ class SqlEventGroupRepository(AbstractEventGroupRepository):
             return ViewEventGroup.from_orm(group)
 
     async def batch_create_group_if_not_exists(
-        self, groups: list[CreateEventGroup]
+            self, groups: list[CreateEventGroup]
     ) -> list[ViewEventGroup]:
         async with self.storage.create_session() as session:
             q = (
@@ -133,3 +133,9 @@ class SqlEventGroupRepository(AbstractEventGroupRepository):
             db_groups = await session.scalars(q)
             await session.commit()
             return [ViewEventGroup.from_orm(group) for group in db_groups]
+
+    async def delete_all(self):
+        async with self.storage.create_session() as session:
+            q = delete(EventGroup).all()
+            await session.execute(q)
+            await session.commit()
